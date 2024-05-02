@@ -19,12 +19,17 @@ returns (
     valorTotalPedido double precision,
     cfopProduto char(7),
 
-    descicaoAcompanhamento varchar(50)
+    descicaoAcompanhamento varchar(25),
+
+    responsavelEmissao varchar(25),
+    responsavelAprovacao varchar(25)
 )
 as
 
     declare variable dataEmissaoInicial date = @#date#dataEmissaoInicial@;
     declare variable dataEmissaoFinal date = @#date#dataEmissaoFinal@;
+    --declare variable dataEmissaoInicial date = '10.01.2022';
+    --declare variable dataEmissaoFinal date = '12.01.2022';
 
 begin
     for
@@ -48,7 +53,10 @@ begin
             cast(pedid.pedvrtotal as double precision),
             tbfis.fiscfop,
 
-            localped.lpdescricao
+            trim(upper(left(localped.lpdescricao, 25))),
+
+            trim(upper(left(funcio.funnome, 25))),
+            trim(upper(left(coalesce(funcio2.funnome, usuario.usunome), 25)))
 
         from pedid
             left join clien     on pedid.clicodigo  = clien.clicodigo
@@ -61,8 +69,18 @@ begin
                                     select max(acoped2.apcodigo) from acoped acoped2
                                     where pedid.id_pedido = acoped2.id_pedido
                                 )
-            left join localped  on acoped.lpcodigo = localped.lpcodigo
-            left join tbfis on pdprd.fiscodigo = tbfis.fiscodigo
+
+            left join localped  on acoped.lpcodigo   = localped.lpcodigo
+            left join tbfis     on pdprd.fiscodigo   = tbfis.fiscodigo
+            left join funcio    on pedid.funcodigo   = funcio.funcodigo
+            left join pedapv    on pedid.id_pedido   = pedapv.id_pedido
+                                and pedapv.apvcodigo = (
+                                    select max(pedapv2.apvcodigo) from pedapv pedapv2
+                                    where pedid.id_pedido = pedapv2.id_pedido
+                                )
+
+            left join usuario        on pedapv.usucodigo  = usuario.usucodigo
+            left join funcio funcio2 on usuario.funcodigo = funcio2.funcodigo
 
         where
             pedid.peddtemis >= :dataEmissaoInicial
@@ -94,10 +112,11 @@ begin
             :valorTotalProduto,
             :valorTotalPedido,
             :cfopProduto,
-            :descicaoAcompanhamento
+            :descicaoAcompanhamento,
+            :responsavelEmissao,
+            :responsavelAprovacao
 
        do begin
         suspend;
        end
 end 
-

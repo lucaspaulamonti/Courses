@@ -1,0 +1,31 @@
+select
+    tplente.tplcodigo,
+    tplente.tpldescricao,
+    grupo1.gr1descricao,
+    decode(tplente.tplprocesso,
+        'C', 'CONVENCIONAL',
+        'F', 'FREEFORM'
+    ),
+    decode(tplente.tpltipo,
+        'S', 'BLOCO VISAO SIMPLES',
+        'M', 'BLOCO MULTIFOCAL',
+        'B', 'BLOCO BIFOCAL',
+
+        'L', 'LENTE VISAO SIMPLES',
+        'A', 'LENTE MULTIFOCAL',
+        'C', 'LENTE BIFOCAL',
+
+        'I', 'LENTE INTERMEDIARIA',
+        'N', 'NENHUM'
+    )
+from produ
+    inner join tplente on produ.tplcodigo = tplente.tplcodigo
+    left join grupo1 on produ.gr1codigo = grupo1.gr1codigo
+where
+    produ.protipo = 'F'
+    and produ.prosituacao = 'A'
+    and produ.procodigo not like 'PDC%'
+    and produ.tplcodigo is not null
+    and tplente.tplsit = 'A'
+    and tplente.tplcodpro is not null
+;
